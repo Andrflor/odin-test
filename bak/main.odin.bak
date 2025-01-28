@@ -1,0 +1,108 @@
+package game
+
+import rl "vendor:raylib"
+
+main :: proc() {
+	defer rl.CloseWindow()
+
+	// Initialization
+	rl.InitWindow(0, 0, "Fullscreen Example")
+	rl.ToggleFullscreen()
+
+	car_speed: f32 = 5.0 // Car speed (units per second)
+	terrain_size: f32 = 50.0 // Size of one terrain chunk
+
+	car_position := rl.Vector3{0.0, 0.5, 0.0} // Car starting position
+
+	camera := rl.Camera3D {
+		position   = rl.Vector3{car_position.x, car_position.y + 10.0, car_position.z + 10.0}, // Above and behind car
+		target     = car_position,
+		up         = rl.Vector3{0.0, 1.0, 0.0},
+		fovy       = 45.0,
+		projection = rl.CameraProjection.PERSPECTIVE,
+	}
+
+	rl.SetTargetFPS(60) // Lock to 60 FPS
+
+	// Main Game Loop
+	for !rl.WindowShouldClose() {
+		// Delta time for consistent speed
+		dt := rl.GetFrameTime()
+
+		// Update
+		update_car_position(&car_position, car_speed, dt)
+		update_camera(&camera, car_position)
+
+		// Render
+		rl.BeginDrawing()
+		rl.ClearBackground(rl.RAYWHITE)
+
+		rl.BeginMode3D(camera)
+		render_terrain(car_position, terrain_size, 3) // Dynamically render terrain around the car
+		render_car(car_position)
+		rl.EndMode3D()
+
+		render_ui()
+		rl.EndDrawing()
+	}
+}
+
+// Update the car's position based on input
+update_car_position :: proc(car_position: ^rl.Vector3, car_speed: f32, dt: f32) {
+	if rl.IsKeyDown(rl.KeyboardKey.W) {
+		car_position.z -= car_speed * dt // Move forward
+	}
+	if rl.IsKeyDown(rl.KeyboardKey.Z) {
+		car_position.z += car_speed * dt // Move backward
+	}
+	if rl.IsKeyDown(rl.KeyboardKey.A) {
+		car_position.x -= car_speed * dt // Move left
+	}
+	if rl.IsKeyDown(rl.KeyboardKey.D) {
+		car_position.x += car_speed * dt // Move right
+	}
+}
+
+// Update the camera to follow the car
+update_camera :: proc(camera: ^rl.Camera3D, car_position: rl.Vector3) {
+	camera.target = car_position
+	camera.position = rl.Vector3 {
+		car_position.x,
+		car_position.y + 10.0, // Above the car
+		car_position.z + 10.0, // Behind the car
+	}
+}
+
+// Render terrain dynamically around the car
+render_terrain :: proc(car_position: rl.Vector3, terrain_size: f32, render_distance: int) {
+	grid_start_x: f32 = car_position.x - terrain_size * f32(render_distance)
+	grid_end_x: f32 = car_position.x + terrain_size * f32(render_distance)
+	grid_start_z: f32 = car_position.z - terrain_size * f32(render_distance)
+	grid_end_z: f32 = car_position.z + terrain_size * f32(render_distance)
+
+	for z := grid_start_z; z <= grid_end_z; z += terrain_size {
+		rl.DrawLine3D(
+			rl.Vector3{grid_start_x, 0.0, z},
+			rl.Vector3{grid_end_x, 0.0, z},
+			rl.DARKGRAY,
+		)
+	}
+
+	for x := grid_start_x; x <= grid_end_x; x += terrain_size {
+		rl.DrawLine3D(
+			rl.Vector3{x, 0.0, grid_start_z},
+			rl.Vector3{x, 0.0, grid_end_z},
+			rl.DARKGRAY,
+		)
+	}
+}
+// Render the car
+render_car :: proc(car_position: rl.Vector3) {
+	rl.DrawCube(car_position, 1.0, 1.0, 2.0, rl.RED) // Main car body
+	rl.DrawCubeWires(car_position, 1.0, 1.0, 2.0, rl.BLACK) // Outline for better visibility
+}
+
+// Render UI elements
+render_ui :: proc() {
+	rl.DrawText("Use WASD to move the car", 10, 10, 20, rl.DARKGRAY)
+}

@@ -1,0 +1,34 @@
+package main
+
+import "core:runtime"
+import "core:fmt"
+
+main :: proc() {
+    // Create a memory arena context
+    arena: runtime.Arena
+    runtime.arena_init(&arena, make([]byte, 1024 * 1024))
+
+    // Create a new allocation context using the arena
+    arena_context := runtime.Arena_Context{
+        allocator = runtime.arena_allocator(&arena),
+        temp_allocator = runtime.default_temp_allocator(),
+    }
+
+    // Use context.allocator to allocate memory from the arena
+    context.allocator = arena_context.allocator
+    {
+        // Memory allocated here uses the arena
+        data := make([]int, 100)
+        defer delete(data)
+
+        // Allocate a string
+        str := new(string)
+        str^ = "Hello from arena"
+        defer free(str)
+
+        fmt.println("Allocated in arena:", data, str^)
+    }
+
+    // Clean up the arena
+    runtime.arena_free(&arena)
+}
