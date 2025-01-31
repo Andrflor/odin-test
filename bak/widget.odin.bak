@@ -1,0 +1,45 @@
+package main
+
+import "core:fmt"
+import "vendor:raylib"
+
+Widget :: struct {
+	build: proc(widget: ^Widget) -> Widget,
+}
+
+
+Color :: raylib.Color
+Size :: distinct [2]i32
+
+Container :: struct {
+	color: Color,
+	size:  Size,
+}
+
+main :: proc() {
+
+	container := Container {
+		color = Color{255, 0, 0, 255},
+		size  = Size{300, 100},
+	}
+	run(container)
+}
+
+container_render :: proc(widget: Container) {
+	raylib.DrawRectangle(0, 0, widget.size.x, widget.size.y, widget.color)
+}
+
+run :: proc(widget: Container) {
+	raylib.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "aAPp")
+	defer raylib.CloseWindow()
+	raylib.SetTargetFPS(60)
+
+	for !raylib.WindowShouldClose() {
+		raylib.BeginDrawing()
+		container_render(widget)
+		raylib.EndDrawing()
+	}
+}
+
+SCREEN_WIDTH :: 600
+SCREEN_HEIGHT :: 300
